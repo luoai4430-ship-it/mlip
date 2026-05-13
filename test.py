@@ -305,7 +305,7 @@ def ase_atoms_to_dpdata_system(atoms):
     ASE Atoms → dpdata LabeledSystem
     """
 
-    np, _, _ = _lazy_import_science_libs()
+    np, dpdata, _ = _lazy_import_science_libs()
 
     symbols = atoms.get_chemical_symbols()
 
@@ -354,10 +354,6 @@ def ase_atoms_to_dpdata_system(atoms):
     # =====================
     # Energy
     # =====================
-    
-# =====================
-# Energy
-# =====================
 
     energy_keys = [
         "energy",
@@ -375,9 +371,9 @@ def ase_atoms_to_dpdata_system(atoms):
 
             break
 
-# =====================
-# Forces
-# =====================
+    # =====================
+    # Forces
+    # =====================
 
     force_keys = [
         "forces",
@@ -392,6 +388,11 @@ def ase_atoms_to_dpdata_system(atoms):
             ])
 
             break
+
+    # 有能量/力时返回 LabeledSystem，否则返回 System
+    if "energies" in data or "forces" in data:
+        return dpdata.LabeledSystem(data=data)
+    return dpdata.System(data=data)
 
 
 # ==========================================
