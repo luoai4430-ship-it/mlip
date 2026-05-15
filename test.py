@@ -609,5 +609,5 @@ def convert_data(
         }, ensure_ascii=False)
 
 if __name__ == "__main__":
-    transport_type = os.getenv('MCP_TRANSPORT', 'sse')
+    transport_type = os.getenv('MCP_TRANSPORT', 'streamable-http')
     mcp.run(transport=transport_type)
