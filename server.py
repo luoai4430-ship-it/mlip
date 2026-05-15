@@ -1,15 +1,9 @@
-import sys
 import argparse
 import time
-import traceback
-import subprocess
-from functools import lru_cache
 import json
 import os
-from typing import List
 from mcp.server.fastmcp import FastMCP
 from collections import deque
-from typing import Dict
 
 # 统一输出根目录：桌面文件夹
 BASE_DIR = "C:/Users/Administrator/Desktop/MLIP_workspace"
@@ -63,6 +57,7 @@ def _lazy_import_science_libs():
     return np, dpdata, read
 
 def get_model(model_file, head=None):
+    from deepmd.infer import DeepEval
     key = f"{model_file}_{head}"
     if key not in MODEL_CACHE:
         MODEL_CACHE[key] = DeepEval(str(model_file), head=head)
@@ -976,19 +971,7 @@ def run_docker_lammps_md(work_dir: str, model_file: str = "graph.pb", temp: floa
     import subprocess
     try:
         # 1. 路径极速翻译
-        win_path = work_dir.replace('\\', '/')
-        if "wsl.localhost/Ubuntu-24.04" in win_path:
-            linux_path = win_path.split("wsl.localhost/Ubuntu-24.04")[1]
-        elif "wsl$/Ubuntu-24.04" in win_path:
-            linux_path = win_path.split("wsl$/Ubuntu-24.04")[1]
-        elif win_path.startswith('C:') or win_path.startswith('c:'):
-            linux_path = "/mnt/c" + win_path[2:]
-        elif win_path.startswith('D:') or win_path.startswith('d:'):
-            linux_path = "/mnt/d" + win_path[2:]
-        else:
-            linux_path = win_path
-        if not linux_path.startswith("/"):
-            linux_path = "/" + linux_path
+        linux_path = _parse_wsl_path(work_dir)
 
         # 2. 生成 LAMMPS 运行脚本 (注：官方镜像通常不需要显式 plugin load，此处保留但建议核实)
         lammps_script = f"""
