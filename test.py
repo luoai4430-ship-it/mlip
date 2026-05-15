@@ -1,20 +1,15 @@
 import sys
-from pathlib import Path
 import argparse
 import time
 import traceback
 import subprocess
 from functools import lru_cache
-from pathlib import Path
 import json
 import os
 from typing import List
 from mcp.server.fastmcp import FastMCP
 from collections import deque
-from ase.io import read, write
 from typing import Dict
-import numpy as np
-import dpdata
 
 # 统一输出根目录：桌面文件夹
 BASE_DIR = "C:/Users/Administrator/Desktop/MLIP_workspace"
@@ -59,6 +54,14 @@ args = parse_args()
 mcp = FastMCP("MLIP", port=args.port, host=args.host)
 
 MODEL_CACHE = {}
+
+
+def _lazy_import_science_libs():
+    """Lazy import heavy scientific libraries to reduce MCP startup cost."""
+    import numpy as np
+    import dpdata
+    from ase.io import read
+    return np, dpdata, read
 def get_model(model_file, head=None):
     key = f"{model_file}_{head}"
     if key not in MODEL_CACHE:
@@ -189,6 +192,7 @@ def validate_dataset(ds) -> dict:
     """
 
     problems = []
+    _, dpdata, _ = _lazy_import_science_libs()
     if isinstance(ds, dpdata.MultiSystems):
         if len(ds.systems) == 0:
             return {
@@ -261,6 +265,7 @@ def extract_metadata(ds) -> dict:
     提取统一元数据
     """
 
+    _, dpdata, _ = _lazy_import_science_libs()
     if isinstance(ds, dpdata.MultiSystems):
         sample = list(ds.systems.values())[0]
         data = sample.data
@@ -299,6 +304,8 @@ def ase_atoms_to_dpdata_system(atoms):
     """
     ASE Atoms → dpdata LabeledSystem
     """
+
+    np, dpdata, _ = _lazy_import_science_libs()
 
     symbols = atoms.get_chemical_symbols()
 
@@ -347,10 +354,6 @@ def ase_atoms_to_dpdata_system(atoms):
     # =====================
     # Energy
     # =====================
-    
-# =====================
-# Energy
-# =====================
 
     energy_keys = [
         "energy",
@@ -368,9 +371,9 @@ def ase_atoms_to_dpdata_system(atoms):
 
             break
 
-# =====================
-# Forces
-# =====================
+    # =====================
+    # Forces
+    # =====================
 
     force_keys = [
         "forces",
@@ -386,6 +389,11 @@ def ase_atoms_to_dpdata_system(atoms):
 
             break
 
+    # 有能量/力时返回 LabeledSystem，否则返回 System
+    if "energies" in data or "forces" in data:
+        return dpdata.LabeledSystem(data=data)
+    return dpdata.System(data=data)
+
 
 # ==========================================
 # Universal Dataset Loader
@@ -398,6 +406,8 @@ def load_dataset(
     """
     统一科学数据加载入口
     """
+
+    _, dpdata, read = _lazy_import_science_libs()
 
     clean_path = os.path.normpath(path).replace(
         "\\",
