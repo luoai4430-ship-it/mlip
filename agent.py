@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
-from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
+from google.adk.tools.mcp_tool import mcp_session_manager
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 
 from google.adk.apps.app import App, EventsCompactionConfig
@@ -20,8 +20,12 @@ load_dotenv()
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 
 mcp_tools2 = McpToolset(
-    connection_params=SseConnectionParams(
-        url="http://127.0.0.1:8000/sse"  
+    connection_params=getattr(
+        mcp_session_manager,
+        "StreamableHttpConnectionParams",
+        getattr(mcp_session_manager, "StreamableHTTPConnectionParams")
+    )(
+        url="http://127.0.0.1:8000/mcp"
     )
 )
 
