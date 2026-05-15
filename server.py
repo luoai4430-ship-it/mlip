@@ -72,6 +72,21 @@ def health() -> str:
         "base_directory": BASE_DIR
     }, ensure_ascii=False)
 
+@mcp.resource("mlip://server/info")
+def server_info_resource() -> str:
+    """提供 MCP 服务静态信息，便于客户端通过 resource 读取。"""
+    return json.dumps({
+        "name": "MLIP",
+        "transport_default": "streamable-http",
+        "host": args.host,
+        "port": args.port
+    }, ensure_ascii=False)
+
+@mcp.resource("mlip://workspace/base_dir")
+def workspace_base_dir_resource() -> str:
+    """提供当前工作目录根路径，适合只读场景。"""
+    return BASE_DIR
+
 @mcp.tool()
 def setup_project(project_name: str = "rare_earth") -> str:
     """在 MLIP_workspace下创建项目目录"""
@@ -1046,5 +1061,5 @@ run {steps}
         return json.dumps({"error": f"MCP 工具提交失败: {str(e)}"}, ensure_ascii=False)
 
 if __name__ == "__main__":
-    transport_type = os.getenv('MCP_TRANSPORT', 'sse')
+    transport_type = os.getenv('MCP_TRANSPORT', 'streamable-http')
     mcp.run(transport=transport_type)
